@@ -2,11 +2,16 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, redirect, render
-from django.http import HttpResponseForbidden
-from .models import Tweet, Like, Comment, Follow, UserProfile
-from .forms import TweetForm, CommentForm, SignUpForm, ProfileForm
+from django.http import HttpResponseForbidden, JsonResponse
+from django.template.loader import render_to_string
+from django.db.models import Q
 import re
+
+from .models import Tweet, Like, Comment, Follow, UserProfile, TweetImage
+from .forms import TweetForm, CommentForm, SignUpForm, ProfileForm, TweetImageFormSet
 from .utils import get_or_create_link_preview
+
+
 
 
 def signup_view(request):
@@ -28,31 +33,46 @@ def timeline(request):
     following_ids = list(
         Follow.objects.filter(follower=request.user).values_list('following_id', flat=True)
     )
+
     qs = Tweet.objects.filter(
         user_id__in=[request.user.id, *following_ids]
-    ).select_related('user', 'user__userprofile', 'link_preview')
+    ).select_related('user', 'user__userprofile', 'link_preview').prefetch_related('images')
 
     if request.method == 'POST':
-        form = TweetForm(request.POST, request.FILES)
-        if form.is_valid():
+        form = TweetForm(request.POST)
+        formset = TweetImageFormSet(request.POST, request.FILES, queryset=TweetImage.objects.none())
+
+        if form.is_valid() and formset.is_valid():
             tw = form.save(commit=False)
             tw.user = request.user
 
-            # 🧠 --- NUEVO BLOQUE: detectar enlace y generar preview ---
+            # 🔗 BLOQUE DE ENLACES (mantiene tu funcionalidad actual)
             url_regex = r'(https?://[^\s]+)'
             match = re.search(url_regex, tw.content)
             if match:
                 url = match.group(1)
                 preview = get_or_create_link_preview(url)
                 tw.link_preview = preview
-            # ----------------------------------------------------------
 
             tw.save()
+
+            # 🖼️ BLOQUE MULTI-IMAGEN
+            for f in formset.cleaned_data:
+                if f:
+                    TweetImage.objects.create(tweet=tw, image=f["image"])
+
             return redirect('timeline')
+
     else:
         form = TweetForm()
+        formset = TweetImageFormSet(queryset=TweetImage.objects.none())
 
-    return render(request, 'core/timeline.html', {'tweets': qs, 'form': form})
+    return render(request, 'core/timeline.html', {
+        'tweets': qs,
+        'form': form,
+        'formset': formset
+    })
+
 
 
 @login_required

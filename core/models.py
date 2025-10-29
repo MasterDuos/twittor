@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.urls import reverse
+from django.core.validators import FileExtensionValidator
+from image_cropping import ImageRatioField
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -111,3 +113,34 @@ class LinkPreview(models.Model):
 
     def __str__(self):
         return self.url
+
+from django.core.validators import FileExtensionValidator
+from django.core.exceptions import ValidationError
+
+def validate_image_size(image):
+    """Valida que la imagen no supere 5 MB."""
+    max_size = 5 * 1024 * 1024  # 5 MB
+    if image.size > max_size:
+        raise ValidationError("La imagen no debe superar los 5 MB.")
+
+
+def validate_image_size(image):
+    """Valida que la imagen no supere 10 MB."""
+    max_size = 10 * 1024 * 1024  # 10 MB
+    if image.size > max_size:
+        raise ValidationError("La imagen no debe superar los 10 MB.")
+
+
+class TweetImage(models.Model):
+    tweet = models.ForeignKey('Tweet', on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(
+        upload_to='tweets/multi/',
+        validators=[
+            FileExtensionValidator(['jpg', 'jpeg', 'png', 'gif']),
+            validate_image_size
+        ]
+    )
+    cropping = ImageRatioField('image', '500x500')  # ✅ campo aparte, fuera del ImageField
+
+    def __str__(self):
+        return f"Imagen de {self.tweet.user.username} ({self.tweet.id})"

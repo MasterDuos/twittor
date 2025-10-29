@@ -2,6 +2,9 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from .models import Tweet, Comment, UserProfile
+from django.forms import modelformset_factory
+from image_cropping import ImageCropWidget
+from .models import TweetImage
 
 BASE_INPUT = {'class': 'input'}
 BASE_AREA  = {'class': 'input min-h-[100px]'}  # textarea style
@@ -45,3 +48,15 @@ class ProfileForm(forms.ModelForm):
             'bio': forms.TextInput(attrs={'placeholder': 'Cuéntanos algo sobre ti', **BASE_INPUT}),
             'avatar': forms.ClearableFileInput(attrs={**BASE_FILE})
         }
+
+TweetImageFormSet = modelformset_factory(
+    TweetImage,
+    fields=("image", "cropping"),  # ✅ ahora incluye el campo de recorte
+    widgets={
+        "cropping": ImageCropWidget(),  # 👈 renderiza el área de recorte visual
+    },
+    extra=4,       # se permiten hasta 4 imágenes
+    max_num=4,     
+    can_delete=False,
+)
+
