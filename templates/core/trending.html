@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Tendencias de Enlaces{% endblock %}
+{% block content %}
+<div class="card p-6 max-w-2xl mx-auto space-y-4">
+  <h1 class="text-2xl font-bold mb-2 text-center">🔗 Enlaces más compartidos (últimas 24 h)</h1>
+
+  {% if trending %}
+    <table class="w-full text-sm border-collapse">
+      <thead class="bg-gray-100 dark:bg-gray-800">
+        <tr>
+          <th class="text-left p-2">Dominio</th>
+          <th class="text-right p-2">Veces compartido</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for domain, count in trending %}
+        <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 transition">
+          <td class="p-2"><a href="https://{{ domain }}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">{{ domain }}</a></td>
+          <td class="p-2 text-right font-semibold">{{ count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="text-gray-500 text-center">No hay enlaces recientes aún.</p>
+  {% endif %}
+</div>
+{% endblock %}

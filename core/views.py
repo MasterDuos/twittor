@@ -5,6 +5,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.http import HttpResponseForbidden
 from .models import Tweet, Like, Comment, Follow, UserProfile
 from .forms import TweetForm, CommentForm, SignUpForm, ProfileForm
+import re
+from .utils import get_or_create_link_preview
+
 
 def signup_view(request):
     if request.user.is_authenticated:
@@ -21,19 +24,36 @@ def signup_view(request):
 
 @login_required
 def timeline(request):
-    # Users to show: me + I'm following
-    following_ids = list(Follow.objects.filter(follower=request.user).values_list('following_id', flat=True))
-    qs = Tweet.objects.filter(user_id__in=[request.user.id, *following_ids]).select_related('user', 'user__userprofile')
+    # Usuarios a mostrar: yo + los que sigo
+    following_ids = list(
+        Follow.objects.filter(follower=request.user).values_list('following_id', flat=True)
+    )
+    qs = Tweet.objects.filter(
+        user_id__in=[request.user.id, *following_ids]
+    ).select_related('user', 'user__userprofile', 'link_preview')
+
     if request.method == 'POST':
         form = TweetForm(request.POST, request.FILES)
         if form.is_valid():
             tw = form.save(commit=False)
             tw.user = request.user
+
+            # 🧠 --- NUEVO BLOQUE: detectar enlace y generar preview ---
+            url_regex = r'(https?://[^\s]+)'
+            match = re.search(url_regex, tw.content)
+            if match:
+                url = match.group(1)
+                preview = get_or_create_link_preview(url)
+                tw.link_preview = preview
+            # ----------------------------------------------------------
+
             tw.save()
             return redirect('timeline')
     else:
         form = TweetForm()
+
     return render(request, 'core/timeline.html', {'tweets': qs, 'form': form})
+
 
 @login_required
 def explore(request):
@@ -173,3 +193,41 @@ def like_toggle(request, pk):
         html = render_to_string('components/like_button.html', {'t': tweet, 'user': request.user})
         return JsonResponse({'html': html})
     return redirect(request.META.get('HTTP_REFERER', tweet.get_absolute_url()))
+
+from datetime import timedelta
+from django.utils import timezone
+from django.db.models import Count
+from urllib.parse import urlparse
+
+@login_required
+def trending_links(request):
+    """
+    Muestra los dominios más compartidos en los últimos 24 h.
+    """
+    # Rango temporal de las últimas 24 horas
+    since = timezone.now() - timedelta(hours=24)
+
+    # Obtener tweets recientes con enlace válido
+    recent = Tweet.objects.filter(
+        created_at__gte=since,
+        link_preview__isnull=False
+    ).select_related('link_preview')
+
+    # Extraer dominios y contar
+    domains = {}
+    for tw in recent:
+        if tw.link_preview and tw.link_preview.url:
+            try:
+                domain = urlparse(tw.link_preview.url).netloc.replace("www.", "")
+                domains[domain] = domains.get(domain, 0) + 1
+            except Exception:
+                pass
+
+    # Ordenar de mayor a menor frecuencia
+    trending = sorted(domains.items(), key=lambda x: x[1], reverse=True)[:10]
+
+    ctx = {
+        "trending": trending,
+        "total_links": sum(domains.values())
+    }
+    return render(request, "core/trending.html", ctx)

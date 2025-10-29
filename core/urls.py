@@ -1,5 +1,7 @@
 from django.urls import path
 from . import views
+from .views import trending_links
+
 
 urlpatterns = [
     path('search/', views.search, name='search'),
@@ -14,4 +16,5 @@ urlpatterns = [
         path('t/<int:pk>/retweet/', views.retweet, name='retweet'),
         path('t/<int:pk>/quote/', views.quote, name='quote'),
     path('u/<str:username>/', views.profile, name='profile'),
+    path("trending/", trending_links, name="trending_links"),
 ]

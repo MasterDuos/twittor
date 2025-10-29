@@ -23,11 +23,27 @@ class Follow(models.Model):
         return f'{self.follower.username} → {self.following.username}'
 
 class Tweet(models.Model):
-    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='children')
+    parent = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='children'
+    )
     is_retweet = models.BooleanField(default=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     content = models.CharField(max_length=280)
     image = models.ImageField(upload_to='tweets/', blank=True, null=True)
+
+    # 🔗 NUEVO: relación con LinkPreview (vista previa de enlaces)
+    link_preview = models.ForeignKey(
+        "LinkPreview",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tweets"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -77,3 +93,21 @@ class Notification(models.Model):
 
     def __str__(self):
         return f'{self.actor} -> {self.recipient}: {self.verb}'
+
+from django.utils import timezone
+from datetime import timedelta
+
+
+class LinkPreview(models.Model):
+    url = models.URLField(unique=True)
+    title = models.CharField(max_length=255, blank=True)
+    description = models.TextField(blank=True)
+    image = models.URLField(blank=True)
+    fetched_at = models.DateTimeField(auto_now_add=True)
+
+    def is_expired(self):
+        """Determina si la información cacheada tiene más de 24h"""
+        return timezone.now() - self.fetched_at > timedelta(hours=24)
+
+    def __str__(self):
+        return self.url
