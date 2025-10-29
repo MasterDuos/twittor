@@ -1,0 +1,7 @@
+{
+  "python.defaultInterpreterPath": "C:\\Users\\rkevi\\anaconda3\\envs\\parcial\\python.exe",
+  "python.envManager": "conda",
+  "python.terminal.activateEnvironment": true,
+  "python.analysis.autoImportCompletions": true,
+  "python.languageServer": "Pylance"
+}
