@@ -2,36 +2,94 @@
 {% load static %}
 {% load extras %}
 {% block title %}Entrar - Twittor{% endblock %}
+
 {% block content %}
-<div class="grid md:grid-cols-2 gap-8 items-center min-h-[70vh]">
-  <div class="hidden md:block">
-    <div class="card p-8">
-      <h2 class="text-2xl font-bold mb-3">Bienvenido a Twittor</h2>
-      <p class="text-gray-600 dark:text-gray-300">Comparte ideas, sigue temas y conecta con personas en tiempo real.</p>
-      <ul class="mt-6 space-y-2 text-sm text-gray-600 dark:text-gray-300">
-        <li>• Interfaz moderna con modo oscuro</li>
-        <li>• Hashtags, menciones y búsqueda</li>
-        <li>• Likes, respuestas, retuits y citas</li>
-      </ul>
-    </div>
-  </div>
-  <div>
-    <div class="card p-8">
-      <h1 class="text-2xl font-bold mb-6">Entrar</h1>
-      <form method="post" class="space-y-4">
+<div class="min-h-[80vh] flex items-center justify-center">
+  <div class="w-full max-w-sm space-y-3">
+
+    <!-- Card principal -->
+    <div class="card bg-black border border-gray-800 text-gray-100 px-8 py-6 rounded-xl">
+      <div class="text-center mb-6">
+        <!-- “Logo” Twittor -->
+        <p class="text-3xl font-extrabold tracking-wide">Twittor</p>
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="mb-3 p-2 rounded-lg bg-red-900/40 text-xs text-red-200 border border-red-500/60">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <form method="post" class="space-y-3">
         {% csrf_token %}
+
         <div>
-          <label class="block text-sm mb-1">Usuario</label>
-          <input type="text" name="username" autofocus required class="input">
+          {% if form.username.errors %}
+            <div class="text-xs text-red-400 mb-1">{{ form.username.errors }}</div>
+          {% endif %}
+          <input
+            type="text"
+            name="username"
+            required
+            autofocus
+            value="{{ form.username.value|default:'' }}"
+            placeholder="Teléfono, usuario o correo electrónico"
+            class="input bg-black border-gray-700 text-sm placeholder:text-gray-500">
         </div>
+
         <div>
-          <label class="block text-sm mb-1">Contraseña</label>
-          <input type="password" name="password" required class="input">
+          {% if form.password.errors %}
+            <div class="text-xs text-red-400 mb-1">{{ form.password.errors }}</div>
+          {% endif %}
+          <input
+            type="password"
+            name="password"
+            required
+            placeholder="Contraseña"
+            class="input bg-black border-gray-700 text-sm placeholder:text-gray-500">
         </div>
-        <button class="w-full btn-primary">Entrar</button>
+
+        {% if next %}
+          <input type="hidden" name="next" value="{{ next }}">
+        {% endif %}
+
+        <button type="submit" class="w-full btn-primary bg-indigo-600 hover:bg-indigo-700 text-xs font-semibold py-2 rounded-md">
+          Iniciar sesión
+        </button>
+
+        <!-- Separador “o” -->
+        <div class="flex items-center gap-3 my-2">
+          <div class="flex-1 h-px bg-gray-700"></div>
+          <span class="text-xs text-gray-400">o</span>
+          <div class="flex-1 h-px bg-gray-700"></div>
+        </div>
+
+        <!-- Placeholder futuro login social -->
+        <button type="button"
+                class="w-full btn-outline text-xs font-semibold py-2 rounded-md border-gray-700 text-blue-400">
+          Iniciar sesión con Google
+        </button>
       </form>
-      <p class="mt-4 text-sm text-gray-600 dark:text-gray-300">¿No tienes cuenta? <a href="{% url 'signup' %}" class="link">Crear cuenta</a></p>
+
+      <div class="mt-3 text-center">
+        <a href="#" class="text-xs text-blue-400 hover:underline">
+          ¿Olvidaste tu contraseña?
+        </a>
+      </div>
     </div>
+
+    <!-- Card inferior: registro -->
+    <div class="card bg-black border border-gray-800 text-gray-100 text-center text-sm py-4 rounded-xl">
+      <span>¿No tienes una cuenta?</span>
+      <a href="{% url 'signup' %}" class="ml-1 text-blue-400 font-semibold hover:underline">
+        Regístrate
+      </a>
+    </div>
+
   </div>
 </div>
 {% endblock %}
+
+
+
+
